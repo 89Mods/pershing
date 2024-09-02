@@ -65,7 +65,7 @@ class Router:
 
             yy, zz, xx = placement["placement"]
 
-            for pin, d in cell.ports.iteritems():
+            for pin, d in cell.ports.items():
                 (y, z, x) = d["coordinates"]
                 facing = d["facing"]
                 is_output = (d["direction"] == "output")
@@ -101,14 +101,14 @@ class Router:
 
             # Create sets for each of the pins
             sets = []
-            for i in xrange(size):
+            for i in range(size):
                 s = set([i])
                 sets.append(s)
 
             # Compute the weight matrix
             weights = {}
-            for i in xrange(size):
-                for j in xrange(i+1, size):
+            for i in range(size):
+                for j in range(i+1, size):
                     weights[(i, j)] = distance_metric(i, j)
 
             def find_set(u):
@@ -174,7 +174,7 @@ class Router:
             return dag
 
         net_segments = {}
-        for net, pin_list in pin_locations.iteritems():
+        for net, pin_list in pin_locations.items():
             if len(pin_list) < 2:
                 continue
 
@@ -287,7 +287,7 @@ class Router:
         pin_locations = self.extract_extended_pin_locations(placements)
         net_segments = self.create_net_segments(pin_locations)
 
-        for net_name, segment_endpoints in net_segments.iteritems():
+        for net_name, segment_endpoints in net_segments.items():
             segments = []
             for a, b in segment_endpoints:
                 coord_a = a["route_coord"]
@@ -305,7 +305,7 @@ class Router:
     def generate_usage_matrix(self, placed_layout, routing, exclude=[]):
         blocks, _ = placed_layout
         usage_matrix = np.copy(blocks)
-        for net_name, d in routing.iteritems():
+        for net_name, d in routing.items():
             for i, segment in enumerate(d["segments"]):
                 if (net_name, i) in exclude:
                     continue
@@ -334,7 +334,7 @@ class Router:
         net_num_violations = {}
 
         # Score each net segment in the entire net
-        for net_name, d in routing.iteritems():
+        for net_name, d in routing.items():
             net_scores[net_name] = []
             net_num_violations[net_name] = []
 
@@ -369,13 +369,13 @@ class Router:
         """
         Normalize scores to [norm_margin, 1-norm_margin].
         """
-        scores = sum(net_scores.itervalues(), [])
+        scores = sum(net_scores.values(), [])
         min_score, max_score = min(scores), max(scores)
         norm_range = 1.0 - 2*norm_margin
         scale = norm_range / (max_score - min_score)
 
         normalized_scores = {}
-        for net_name, scores in net_scores.iteritems():
+        for net_name, scores in net_scores.items():
             new_net_scores = [norm_margin + score * scale for score in scores]
             normalized_scores[net_name] = new_net_scores
 
@@ -388,7 +388,7 @@ class Router:
         which the index represents the net to replace.
         """
         rip_up = []
-        for net_name, norm_scores in net_scores.iteritems():
+        for net_name, norm_scores in net_scores.items():
             for i, norm_score in enumerate(norm_scores):
                 x = random.random()
                 if x < norm_score:
@@ -405,16 +405,16 @@ class Router:
 
         def clear_matrices():
             height, width, length = self.cost_matrix.shape
-            for y in xrange(height):
-                for z in xrange(width):
-                    for x in xrange(length):
+            for y in range(height):
+                for z in range(width):
+                    for x in range(length):
                         self.cost_matrix[y, z, x] = -1
                         self.backtrace_matrix[y, z, x] = 0
 
         # If not created yet, create the cost matrices, otherwise, just zero them out
         if self.cost_matrix is None or self.backtrace_matrix is None:
-            self.cost_matrix = np.full_like(blocks, -1, dtype=np.int)
-            self.backtrace_matrix = np.zeros_like(blocks, dtype=np.int)
+            self.cost_matrix = np.full_like(blocks, -1, dtype=np.int32)
+            self.backtrace_matrix = np.zeros_like(blocks, dtype=np.int32)
         else:
             clear_matrices()
 
@@ -539,7 +539,7 @@ class Router:
 
         # Score the initial routing
         net_scores, net_violations = self.score_routing(initial_routing, usage_matrix)
-        num_violations = sum(sum(net_violations.itervalues(), []))
+        num_violations = sum(sum(net_violations.values(), []))
         iterations = 0
 
         routing = deepcopy(initial_routing)
@@ -577,7 +577,7 @@ class Router:
 
                 # Re-score this net
                 net_scores, net_violations = self.score_routing(routing, usage_matrix)
-                num_violations = sum(sum(net_violations.itervalues(), []))
+                num_violations = sum(sum(net_violations.values(), []))
                 iterations += 1
                 print()
         except KeyboardInterrupt:
@@ -593,7 +593,7 @@ class Router:
         """
         import json
         routing = deepcopy(original_routing)
-        for net_name, net in routing.iteritems():
+        for net_name, net in routing.items():
             for i, segment in enumerate(net["segments"]):
                 del segment["violation"]
                 del segment["wire"]
@@ -606,7 +606,7 @@ class Router:
         import json
         routing = json.loads(f.readline())
         shape = json.loads(f.readline())
-        for net_name, net in routing.iteritems():
+        for net_name, net in routing.items():
             for i, segment in enumerate(net["segments"]):
                 a, b = segment["pins"]
                 n = segment["net"]

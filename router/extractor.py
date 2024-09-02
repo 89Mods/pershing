@@ -73,7 +73,7 @@ class Extractor:
             extracted_net = [determine_movement(start_pin, net[0])]
 
             # (0 to 1) to (n-2 to n-1)
-            for i in xrange(len(net)-1):
+            for i in range(len(net)-1):
                 c1, c2 = net[i], net[i+1]
                 extracted_net.append(determine_movement(c1, c2))
 
@@ -282,14 +282,14 @@ class Extractor:
         Place the wires and vias specified by routing.
         """
         routing = deepcopy(routing)
-        for net_name, d in routing.iteritems():
+        for net_name, d in routing.items():
             for segment in d["segments"]:
                 endpoints = segment["pins"]
                 start_pin = endpoints[0]["pin_coord"]
                 stop_pin = endpoints[1]["pin_coord"]
 
                 extracted_net = self.extract_net_segment(segment, start_pin, stop_pin)
-                segment["extracted_net"] = [(Extractor.WIRE, start_pin)] + extracted_net + [(Extractor.WIRE, stop_pin)]
+                segment["extracted_net"] = [(Extractor.WIRE, start_pin)] + list(extracted_net) + [(Extractor.WIRE, stop_pin)]
 
         return routing
 
@@ -302,7 +302,7 @@ class Extractor:
         extracted_data   = np.copy(data)
         extracted_layout = (extracted_blocks, extracted_data)
 
-        for net_name, d in extracted_routing.iteritems():
+        for net_name, d in extracted_routing.items():
             for segment in d["segments"]:
                 self.place_blocks(segment["extracted_net"], extracted_layout)
 

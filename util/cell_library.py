@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import yaml
+from yaml import CLoader as Loader
 from util.cell import from_lib
 
 class CellLibrary:
@@ -11,7 +12,7 @@ def load(f):
     """
     Loads a YAML file containing standard cell library information.
     """
-    d = yaml.load(f)
+    d = yaml.load(f, Loader=Loader)
 
     library_name = d["library_name"]
     print("Loaded library:", library_name)
@@ -29,7 +30,7 @@ def pregenerate_cells(cell_library, pad=None):
     and then by the rotation (0-3).
     """
     cells = {}
-    for cell_name, cell_data in cell_library.cells.iteritems():
+    for cell_name, cell_data in cell_library.cells.items():
         # Generate first cell
         cell_rot0 = from_lib(cell_name, cell_data, pad)
 

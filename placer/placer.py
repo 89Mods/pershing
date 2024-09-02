@@ -19,7 +19,7 @@ class Placer(object):
     def compute_max_cell_dimension(self):
         # Estimate the width by taking the maximum of X or Z of all cells
         # used in the layout
-        cells = [a[0] for a in self.pregenerated_cells.itervalues()]
+        cells = [a[0] for a in self.pregenerated_cells.values()]
         max_cell_widths = [max(cell.blocks.shape[1], cell.blocks.shape[2]) for cell in cells]
         max_cell_width = max(max_cell_widths)
 
@@ -41,7 +41,7 @@ class Placer(object):
           ...
         ]
         """
-        spacing = 5
+        spacing = 32
 
         # Get the subcircuits from the BLIF
         blif_cells = self.blif.cells
@@ -74,7 +74,7 @@ class Placer(object):
         placements = []
 
         for i, (cell, blif_cell) in enumerate(zip(cells, blif_cells)):
-            row = i / num_cells_side
+            row = int(i / num_cells_side)
             col = i % num_cells_side
 
             dz = row * (max_cell_width + spacing)
@@ -106,7 +106,7 @@ class Placer(object):
             height, width, length = cell.blocks.shape
 
             # Add the pins
-            for pin, d in cell.ports.iteritems():
+            for pin, d in cell.ports.items():
                 (y, z, x) = d["coordinates"]
                 coord = (y + yy, z + zz, x + xx)
                 net_name = placement["pins"][pin]
@@ -132,14 +132,14 @@ class Placer(object):
             height, width, length = cell.blocks.shape
 
             # Add all items in this 3D matrix by the value 1
-            for y in xrange(height):
-                for z in xrange(width):
-                    for x in xrange(length):
+            for y in range(height):
+                for z in range(width):
+                    for x in range(length):
                         coord = (yy + y, zz + z, xx + x)
                         grid[coord] += 1
 
             # Add the pins
-            for pin, d in cell.ports.iteritems():
+            for pin, d in cell.ports.items():
                 (y, z, x) = d["coordinates"]
                 coord = (y + yy, z + zz, x + xx)
                 net_name = placement["pins"][pin]
@@ -148,7 +148,7 @@ class Placer(object):
         net_lengths = {}
 
         # Figure the point-to-point of these pins' locations
-        for net, pins in net_pins.iteritems():
+        for net, pins in net_pins.items():
             dy = max(c[0] for c in pins) - min(c[0] for c in pins)
             dz = max(c[1] for c in pins) - min(c[1] for c in pins)
             dx = max(c[2] for c in pins) - min(c[2] for c in pins)
@@ -172,9 +172,9 @@ class Placer(object):
 
             yy, zz, xx = placement["placement"]
 
-            for y in xrange(cell.blocks.shape[0]):
-                for z in xrange(cell.blocks.shape[1]):
-                    for x in xrange(cell.blocks.shape[2]):
+            for y in range(cell.blocks.shape[0]):
+                for z in range(cell.blocks.shape[1]):
+                    for x in range(cell.blocks.shape[2]):
                         if cell.blocks[y, z, x] > 0:
                             grid[(yy + y, zz + z, xx + x)] += 1
 
@@ -184,7 +184,7 @@ class Placer(object):
 
     def compute_bounds_penalty(self, grid, dimensions):
         penalty = 0
-        for coord, v in grid.iteritems():
+        for coord, v in grid.items():
             y, z, x = coord
             if y < 0 or y >= dimensions[0] or \
                z < 0 or z >= dimensions[1] or \
@@ -204,7 +204,7 @@ class Placer(object):
         """
 
         penalty = 0
-        for coord, v in grid.iteritems():
+        for coord, v in grid.items():
             if v > 1:
                 penalty += (v - 1)
 
@@ -323,7 +323,7 @@ class Placer(object):
             prev_width = 0
             while iteration < iterations:
                 method = "displace"
-                for generation in xrange(generations):
+                for generation in range(generations):
                     # print("  Generation", generation)
                     new_placements, method_used = self.generate(best_placements, T, T_0, dimensions, method)
 
@@ -447,8 +447,8 @@ class Placer(object):
         input_nets = self.blif.inputs
         output_nets = self.blif.outputs
 
-        margin = 5
-        pin_spacing = 5
+        margin = 12
+        pin_spacing = 12
 
         y = 0
         z = 0

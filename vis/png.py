@@ -18,16 +18,16 @@ def blockid2texture(blockid):
     return lut[block_name]
 
 def pins_to_image(layout_dimensions, pins):
-    width = layout_dimensions[2] * 16
-    height = layout_dimensions[1] * 16
+    width = layout_dimensions[2] * 32
+    height = layout_dimensions[1] * 32
     img = Image.new("RGBA", size=(width, height), color=(0, 0, 0, 0))
 
     draw = ImageDraw.Draw(img)
-    for name, locations in pins.iteritems():
+    for name, locations in pins.items():
         for location in locations:
             _, z, x = location
-            z *= 16
-            x *= 16
+            z *= 32
+            x *= 32
             # draw "shadow"
             draw.text((x+1, z+1), name, font=font, fill=(200, 200, 200, 255))
             # draw actual text
@@ -46,7 +46,7 @@ def layout_to_composite(layout, layers=None, pins=None):
     img = None
     
     if layers is None:
-        layers = xrange(layout.shape[0])
+        layers = range(layout.shape[0])
 
     for y in layers:
         new_img = layer_to_img(layout, y)
@@ -80,10 +80,10 @@ def nets_to_png(layout, routing, filename_base="nets", layers=None):
             u, v = segment["pins"]
 
             (_, uz, ux), (_, vz, vx) = u, v
-            x1 = (ux * 16) + 8
-            y1 = (uz * 16) + 8
-            x2 = (vx * 16) + 8
-            y2 = (vz * 16) + 8
+            x1 = (ux * 32) + 16
+            y1 = (uz * 32) + 16
+            x2 = (vx * 32) + 16
+            y2 = (vz * 32) + 16
             draw.line((x1, y1, x2, y2), fill=color, width=3)
 
     full_name = filename_base + ".png"
@@ -97,14 +97,14 @@ def layout_to_png(layout, filename_base="composite", layers=None):
     print("Image written to", full_name)
 
 def layer_to_img(layout, y):
-    image_width = 16 * layout.shape[2]
-    image_height = 16 * layout.shape[1]
+    image_width = 32 * layout.shape[2]
+    image_height = 32 * layout.shape[1]
 
     img = Image.new("RGBA", (image_width, image_height))
-    for z in xrange(layout.shape[1]):
-        for x in xrange(layout.shape[2]):
-            img_x = x * 16
-            img_y = z * 16
+    for z in range(layout.shape[1]):
+        for x in range(layout.shape[2]):
+            img_x = x * 32
+            img_y = z * 32
             blockid = layout[y, z, x]
             # print(blockid)
             block_name = blocks.block_names[blockid]
@@ -117,17 +117,6 @@ def layer_to_img(layout, y):
 
             img.paste(tile, (img_x, img_y))
 
-    return img
-
-def extract_texture(coord):
-    x, y = coord
-
-    left = x * 16
-    right = (x + 1) * 16
-    top = y * 16
-    bottom = (y + 1) * 16
-
-    img = textures.crop((left, top, right, bottom))
     return img
 
 def extract_redstone_texture(coord, layout):
@@ -162,31 +151,31 @@ def extract_redstone_texture(coord, layout):
     return redstone_lut[key]
 
 def create_redstone_textures():
-    redstone_cross_alpha = extract_texture((18, 11)).convert(mode="L")
-    redstone_cross = Image.new("RGB", size=(16, 16), color=(127, 0, 0))
+    redstone_cross_alpha = Image.open("./imgs/redstone_dust_cross.png").convert(mode="L")
+    redstone_cross = Image.new("RGB", size=(32, 32), color=(127, 0, 0))
     redstone_cross.putalpha(redstone_cross_alpha)
 
-    redstone_line_alpha = extract_texture((18, 13)).convert(mode="L")
-    redstone_line = Image.new("RGB", size=(16, 16), color=(127, 0, 0))
+    redstone_line_alpha = Image.open("./imgs/redstone_dust_line.png").convert(mode="L")
+    redstone_line = Image.new("RGB", size=(32, 32), color=(127, 0, 0))
     redstone_line.putalpha(redstone_line_alpha)
     redstone_line = redstone_line.rotate(90)
 
     # Creates a T (with tee down) from the cross
     redstone_t = redstone_cross.copy()
     redstone_t_draw = ImageDraw.Draw(redstone_t)
-    redstone_t_draw.rectangle([(0, 0), (15, 4)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
+    redstone_t_draw.rectangle([(0, 0), (31, 8)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
     del redstone_t_draw
 
     # Create an elbow with east, south directions
     redstone_elbow = redstone_t.copy()
     redstone_elbow_draw = ImageDraw.Draw(redstone_elbow)
-    redstone_elbow_draw.rectangle([(0, 0), (4, 15)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
+    redstone_elbow_draw.rectangle([(0, 0), (8, 31)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
     del redstone_elbow_draw
 
     redstone_dot = redstone_elbow.copy()
     redstone_dot_draw = ImageDraw.Draw(redstone_dot)
-    redstone_dot_draw.rectangle([(12,0), (12, 15)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
-    redstone_dot_draw.rectangle([(0,12), (0, 15)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
+    redstone_dot_draw.rectangle([(24,0), (24, 31)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
+    redstone_dot_draw.rectangle([(0,24), (0, 31)], fill=(0, 0, 0, 0), outline=(0, 0, 0, 0))
 
     redstone_east_west_line = redstone_line.rotate(90)
 
@@ -215,11 +204,7 @@ def create_redstone_textures():
 
     return textures
 
-# Load in the textures and build the lookup table
-texture_path = "/Users/qmn/Library/Application Support/minecraft/textures_0.png"
-textures = Image.open(open(texture_path))
-
-blank = Image.new("RGBA", (16, 16))
+blank = Image.new("RGBA", (32, 32))
 
 coords = {"stone": (20, 9),
           "redstone_torch": (19, 3),
@@ -237,8 +222,8 @@ coords = {"stone": (20, 9),
          }
 
 lut = {"air": blank}
-for name, coord in coords.iteritems():
-    lut[name] = extract_texture(coord)
+for name, coord in coords.items():
+    lut[name] = Image.open("./imgs/" + name + ".png")
 
 conductivity_list_names = ["redstone_wire", "redstone_torch", "unlit_redstone_torch", "powered_repeater", "unpowered_repeater", "unpowered_comparator", "powered_comparator"]
 conductivity_list = [blocks.block_names.index(n) for n in conductivity_list_names]

@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import numpy as np
-import blocks
+import util.blocks as blocks
 
 class MaskedSubChunk(object):
     """
@@ -34,9 +34,9 @@ class MaskedSubChunk(object):
         Iterates through ((y, z, x), block id, block data) values of this
         MaskedSubChunk.
         """
-        for y in xrange(self.blocks.shape[0]):
-            for z in xrange(self.blocks.shape[1]):
-                for x in xrange(self.blocks.shape[2]):
+        for y in range(self.blocks.shape[0]):
+            for z in range(self.blocks.shape[1]):
+                for x in range(self.blocks.shape[2]):
                     block_coords = (y, z, x)
                     block_mask = self.mask[block_coords]
 
@@ -57,9 +57,9 @@ class MaskedSubChunk(object):
         new_mask = np.array([np.rot90(my, turns) for my in self.mask])
 
         # Rotate the data (if applicable)
-        for y in xrange(new_data.shape[0]):
-            for z in xrange(new_data.shape[1]):
-                for x in xrange(new_data.shape[2]):
+        for y in range(new_data.shape[0]):
+            for z in range(new_data.shape[1]):
+                for x in range(new_data.shape[2]):
                     b = new_blocks[y, z, x]
                     d = new_data[y, z, x]
                     new_data[y, z, x] = self.data_rot90(b, d, turns)

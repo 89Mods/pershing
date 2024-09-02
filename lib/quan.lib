@@ -23,6 +23,17 @@ library(quan) {
       direction: output;
     }
   }
+  
+  cell(BUFF) {
+    area: 4
+    pin(A) {
+      direction: input;
+    }
+    pin(Y) {
+      function: "A";
+      direction: output;
+    }
+  }
 
   cell(NAND) {
     area: 9

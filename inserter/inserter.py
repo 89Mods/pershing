@@ -17,7 +17,7 @@ class Region:
 
     def __exit__(self, type, value, traceback):
         # Writing the affected chunks
-        for k, v in self.chunks.iteritems():
+        for k, v in self.chunks.items():
             (chunk_x, chunk_z) = k
             self.region.write_chunk(chunk_x, chunk_z, v)
 
@@ -187,13 +187,13 @@ def insert_extracted_layout(world, extracted_layout, offset=(0, 0, 0)):
     count = 0
 
     # place base
-    for z in xrange(width):
-        for x in xrange(length):
+    for z in range(width):
+        for x in range(length):
             place_block(world, start_y - 1, z, x, block_names.index("dirt"))
 
-    for yy in xrange(height):
-        for zz in xrange(width):
-            for xx in xrange(length):
+    for yy in range(height):
+        for zz in range(width):
+            for xx in range(length):
                 block = blocks[yy, zz, xx]
 
                 if block == 0:

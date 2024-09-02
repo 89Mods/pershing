@@ -2,8 +2,8 @@ from __future__ import print_function
 
 import numpy as np
 
-from blocks import block_names
-from masked_subchunk import MaskedSubChunk
+from util.blocks import block_names
+from util.masked_subchunk import MaskedSubChunk
 
 class Cell(MaskedSubChunk):
     """
@@ -33,7 +33,7 @@ class Cell(MaskedSubChunk):
         # Rotate the ports
         height, width, length = self.blocks.shape
         new_ports = {}
-        for pin, d in self.ports.iteritems():
+        for pin, d in self.ports.items():
             (y, z, x) = d["coordinates"]
 
             # Compute new facing
@@ -97,7 +97,7 @@ def from_lib(name, cell, pad=0):
 
     # build ports
     ports = {}
-    for pin, d in cell["pins"].iteritems():
+    for pin, d in cell["pins"].items():
         y, z, x = d["coordinates"]
         coord = (y + pad, z + pad, x + pad)
         facing = d["facing"]

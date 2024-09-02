@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from extractor import Extractor
+from router.extractor import Extractor
 
 class MineTime:
     def compute_net_delay(self, extracted_net):
@@ -29,7 +29,7 @@ class MineTime:
 
         def get_cell_outputs(cell_name):
             output_names = []
-            for pin_name, pin_dict in cell_library.cells[cell_name]["pins"].iteritems():
+            for pin_name, pin_dict in cell_library.cells[cell_name]["pins"].items():
                 if pin_dict["direction"] == "output":
                     output_names.append(pin_name)
             return output_names
