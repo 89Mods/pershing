@@ -41,7 +41,7 @@ class Placer(object):
           ...
         ]
         """
-        spacing = 32
+        spacing = 8
 
         # Get the subcircuits from the BLIF
         blif_cells = self.blif.cells
@@ -460,12 +460,14 @@ class Placer(object):
         for i, input_net_name in enumerate(input_nets):
             coord = [y, z + (pin_spacing * i), x]
             pin_placements.append(create_input_pin(input_net_name, coord))
+            print("Placed input pin %s"%input_net_name)
 
         # place output pins
         x = dimensions[2] + margin
         for i, output_net_name in enumerate(output_nets):
             coord = [y, z + (pin_spacing * i), x]
             pin_placements.append(create_output_pin(output_net_name, coord))
+            print("Placed output pin %s"%output_net_name)
 
         # print("Placed", len(pin_placements), "pins")
 

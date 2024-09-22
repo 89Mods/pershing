@@ -218,7 +218,8 @@ coords = {"stone": (20, 9),
           "sticky_piston": (15, 15),
           "redstone_block": (18, 10),
           "planks": (16, 4),
-          "lever": (10, 13)
+          "lever": (10, 13),
+          "glass": (10, 13)
          }
 
 lut = {"air": blank}

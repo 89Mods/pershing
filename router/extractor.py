@@ -10,6 +10,7 @@ class Extractor:
     REPEATER = 2
     UP_VIA = 3
     DOWN_VIA = 4
+    NOOP = 5 # Placeholder between nets
 
     def extraction_to_string(extracted_net):
         d = {Extractor.WIRE: "WIRE",
@@ -134,7 +135,7 @@ class Extractor:
             return strengths
 
         strengths = compute_strength(subsection)
-        while any(strength < min_strength for strength in strengths):
+        while strengths[len(strengths)-1] < min_strength:
             # find candidate section, the first section where it is less than
             # the minimum strength
             repeater_i = strengths.index(min_strength - 1)
@@ -163,7 +164,7 @@ class Extractor:
             strengths = compute_strength(subsection)
 
         # print("Placed repeaters:", subsection)
-        return subsection
+        return subsection, strengths[len(strengths)-1]
 
     def split_extraction(self, extracted_net, net_coords, start_coord, stop_coord):
         """
@@ -190,7 +191,7 @@ class Extractor:
                         after = net_coords[curr]
 
                         # Place the repeaters
-                        repeated_subsection = self.place_repeaters(extracted_net[prev:curr], net_coords[prev:curr], before, after)
+                        repeated_subsection, _ = self.place_repeaters(extracted_net[prev:curr], net_coords[prev:curr], before, after)
                         result.append(repeated_subsection)
                         coords.append(net_coords[prev:curr])
 
@@ -210,12 +211,12 @@ class Extractor:
 
         # Add the last section, unless it's empty (prev == curr)
         before = net_coords[prev - 1]
-        result.append(self.place_repeaters(extracted_net[prev:curr], net_coords[prev:curr], before, stop_coord))
+        result.append(self.place_repeaters(extracted_net[prev:curr], net_coords[prev:curr], before, stop_coord)[0])
         coords.append(net_coords[prev:curr])
 
         return sum(result, []), sum(coords, [])
 
-    def place_blocks(self, extracted_net, layout):
+    def place_blocks(self, extracted_net, layout, pins):
         """
         Modify layout to have the extracted net.
         """
@@ -247,35 +248,65 @@ class Extractor:
             else:
                 raise ValueError("Repeater and previous block have same placement")
 
-        # For each of the types, place
+        # De-duplicate everything
+        things = {Extractor.WIRE: {}, Extractor.REPEATER: {}, Extractor.UP_VIA: {}, Extractor.DOWN_VIA: {}, Extractor.NOOP: {}}
         for i, (extraction_type, placement) in enumerate(extracted_net):
             y, z, x = placement
-            if extraction_type == Extractor.WIRE:
-                blocks[y  , z, x] = redstone_wire
+            things[extraction_type][y,z,x] = i
+            if extraction_type != Extractor.NOOP:
+                # Fill in the stone basement, while we're at it
                 blocks[y-1, z, x] = stone if y == 1 else planks
-            elif extraction_type == Extractor.REPEATER:
-                blocks[y  , z, x] = unpowered_repeater
-                # determine orientation of repeater
-                _, prev_placement = extracted_net[i-1]
+			
+            # Run wires
+            for (y,z,x), i in things[Extractor.WIRE].items():
+                if len(extracted_net) > i+1:
+                    _, next_placement = extracted_net[i+1]
+                else:
+                    next_placement = (-1,-1,-1)
+                if len(extracted_net) > i+2:
+                    t_after, _ = extracted_net[i+2]
+                else:
+                    t_after = Extractor.NOOP
+                if (y,z,x) in things[Extractor.REPEATER]:
+                    continue
+                
+                t, prev_placement = extracted_net[i-1]
                 _, z1, x1 = prev_placement
-                data[y  , z, x] = repeater_facing(z, x, z1, x1)
-                blocks[y-1, z, x] = stone if y == 1 else planks
-            elif extraction_type == Extractor.UP_VIA:
-                blocks[y-1, z, x] = stone
-                blocks[y  , z, x] = stone
-                blocks[y+1, z, x] = redstone_torch
-                data[y+1, z, x] = Torch.UP
-                blocks[y+2, z, x] = planks
-                blocks[y+3, z, x] = unlit_redstone_torch
-                data[y+3, z, x] = Torch.UP
-            elif extraction_type == Extractor.DOWN_VIA:
-                blocks[y  , z, x] = sticky_piston
-                blocks[y-1, z, x] = redstone_block
-                blocks[y-2, z, x] = air
-                blocks[y-3, z, x] = redstone_wire
-                blocks[y-4, z, x] = stone
-            else:
-                raise ValueError("Unknown extraction type", extraction_type)
+                if tuple(next_placement) in things[Extractor.UP_VIA] and y == next_placement[0] and (y,z,x) not in pins:
+                    # We have to make ourselves a repeater
+                    blocks[y, z, x] = unpowered_repeater
+                    if t == Extractor.NOOP:
+                        _, z1, x1 = next_placement
+                        facing = repeater_facing(z1,x1, z,x)
+                    else:
+                        facing = repeater_facing(z,x, z1,x1)
+                    data[y, z, x] = facing
+                else:
+                    blocks[y,z,x] = redstone_wire
+			
+        # Run repeaters
+        for (y,z,x), i in things[Extractor.REPEATER].items():
+            blocks[y, z, x] = unpowered_repeater
+            t, prev_placement = extracted_net[i-1]
+            t1, z1, x1 = prev_placement
+            data[y,z,x] = repeater_facing(z,x, z1,x1)
+        
+        # Run down vias
+        for (y,z,x), _ in things[Extractor.DOWN_VIA].items():
+            blocks[y-1, z, x] = sticky_piston
+            blocks[y-2, z, x] = redstone_block
+            blocks[y-3, z, x] = air
+            blocks[y-4, z, x] = stone
+        
+        # Run up vias
+        for (y,z,x), _ in things[Extractor.UP_VIA].items():
+            blocks[y-1, z, x] = stone
+            blocks[y  , z, x] = stone
+            blocks[y+1, z, x] = redstone_torch
+            data[y+1, z, x] = Torch.UP
+            blocks[y+2, z, x] = planks
+            blocks[y+3, z, x] = unlit_redstone_torch
+            data[y+3, z, x] = Torch.UP
 
     def extract_routing(self, routing):
         """
@@ -302,8 +333,13 @@ class Extractor:
         extracted_data   = np.copy(data)
         extracted_layout = (extracted_blocks, extracted_data)
 
+        total_net = []
+        pins = set()
         for net_name, d in extracted_routing.items():
             for segment in d["segments"]:
-                self.place_blocks(segment["extracted_net"], extracted_layout)
+                total_net += segment["extracted_net"]
+                total_net += [(Extractor.NOOP, (-2,-2,-2))]
+                pins.update(map(lambda p: tuple(p["pin_coord"]), segment["pins"]))
+        self.place_blocks(total_net, extracted_layout, pins)
 
         return extracted_layout
